@@ -14,11 +14,21 @@ import Data.List (isPrefixOf)
 import Graphics.UI.Gtk hiding ( Signal, Variant )
 import Text.Printf
 
-mpris2New :: IO Widget
-mpris2New = do
+data TrackInfo = TrackInfo
+  { trackArtist :: Maybe String -- ^ Artist name, if available.
+  , trackTitle  :: Maybe String -- ^ Track name, if available.
+  , trackAlbum  :: Maybe String -- ^ Album name, if available.
+  }
+
+data MPRIS2Config = MPRIS2Config
+    { trackLabel :: TrackInfo -> String -- ^ calculate label from TrackInfo
+    }
+
+mpris2New :: MPRIS2Config -> IO Widget
+mpris2New cfg = do
   label <- labelNew (Nothing :: Maybe String)
-  widgetHide label
-  _ <- on label realize $ initLabel label
+  widgetShowAll label
+  _ <- on label realize $ initLabel cfg label
   return (toWidget label)
 
 unpack :: IsVariant a => Variant -> a
@@ -26,17 +36,17 @@ unpack var = case fromVariant var of
   Just x -> x
   Nothing -> error("Could not unpack variant: " ++ show var)
 
-initLabel :: Label -> IO ()
-initLabel w = do
+initLabel :: MPRIS2Config -> Label -> IO ()
+initLabel cfg w = do
   client <- connectSession
   -- Set initial song state/info
-  reqSongInfo w client
+  reqSongInfo cfg w client
   listen client propMatcher (callBack w)
   return ()
     where callBack label s = do
             let items = dictionaryItems $ unpack (signalBody s !! 1)
             updatePlaybackStatus label items
-            updateMetadata label items
+            updateMetadata cfg label items
             return ()
           propMatcher = matchAny { matchSender = Nothing
                                  , matchDestination = Nothing
@@ -45,8 +55,8 @@ initLabel w = do
                                  , matchMember = Just "PropertiesChanged"
                                  }
 
-reqSongInfo :: Label -> Client -> IO ()
-reqSongInfo w client = do
+reqSongInfo :: MPRIS2Config -> Label -> Client -> IO ()
+reqSongInfo cfg w client = do
   rep <- call_ client (methodCall "/org/freedesktop/DBus" "org.freedesktop.DBus" "ListNames")
                          { methodCallDestination = Just "org.freedesktop.DBus" }
   let plist = unpack $ methodReturnBody rep !! 0
@@ -55,7 +65,7 @@ reqSongInfo w client = do
     0 -> return ()
     _ -> do
       reply <- getProperty client (players !! 0) "Metadata"
-      updateSongInfo w $ dictionaryItems $ (unpack . unpack) (methodReturnBody reply !! 0)
+      updateSongInfo cfg w $ dictionaryItems $ (unpack . unpack) (methodReturnBody reply !! 0)
       reply' <- getProperty client (players !! 0) "PlaybackStatus"
       let status = (unpack . unpack) (methodReturnBody reply' !! 0) :: String
       case status of
@@ -72,13 +82,14 @@ getProperty client name property = do
                          toVariant property ]
     }
 
-setSongInfo :: Label -> String -> String -> IO ()
-setSongInfo w artist title = do
-  let msg :: String
-      msg = case artist of
-        "" -> escapeMarkup $ printf "%s" (truncateString 30 title)
-        _ ->  escapeMarkup $ printf "%s - %s" (truncateString 15 artist) (truncateString 30 title)
-      txt = "<span fgcolor='yellow'>▶</span> " ++ msg
+setSongInfo :: MPRIS2Config -> Label -> Maybe String -> Maybe String -> Maybe String
+                -> IO ()
+setSongInfo (MPRIS2Config { trackLabel = getTrackLabel }) w artist album title = do
+  let txt = "<span fgcolor='yellow'>▶</span> " ++
+          (getTrackLabel $ TrackInfo { trackArtist = artist
+                                     , trackTitle = title
+                                     , trackAlbum = album
+                                     })
   postGUIAsync $ do
     labelSetMarkup w txt
 
@@ -98,15 +109,8 @@ updatePlaybackStatus w items = do
     Nothing -> do
       return ()
 
-updateSongInfo :: Label -> [(Variant, Variant)] -> IO ()
-updateSongInfo w items = do
-  let artist = case readArtist of
-        Just x -> x
-        Nothing -> ""
-  case readTitle of
-    Just title -> do
-      setSongInfo w artist title
-    Nothing -> return ()
+updateSongInfo :: MPRIS2Config -> Label -> [(Variant, Variant)] -> IO ()
+updateSongInfo cfg w items = setSongInfo cfg w readAlbum readAlbum readTitle
   where
     readArtist :: Maybe String
     readArtist = do
@@ -116,11 +120,15 @@ updateSongInfo w items = do
     readTitle = do
       title <- lookup (toVariant ("xesam:title" :: String)) items
       Just $ (unpack . unpack) title
+    readAlbum :: Maybe String
+    readAlbum = do
+      album <- lookup (toVariant ("xesam:album" :: String)) items
+      Just $ (unpack . unpack) album
 
-updateMetadata :: Label -> [(Variant, Variant)] -> IO ()
-updateMetadata w items = do
+updateMetadata :: MPRIS2Config -> Label -> [(Variant, Variant)] -> IO ()
+updateMetadata cfg w items = do
   case lookup (toVariant ("Metadata" :: String)) items of
     Just meta -> do
       let metaItems = dictionaryItems $ (unpack . unpack) meta
-      updateSongInfo w metaItems
+      updateSongInfo cfg w metaItems
     Nothing -> return ()

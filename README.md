@@ -36,4 +36,3 @@ An incomplete list of things that would be cool to have:
 
  * xrandr widget (for dealing changing clone/extend mode and orientation)
  * Better behavior when adding/removing monitors (never tried it)
- * Make MPRIS more configurable
