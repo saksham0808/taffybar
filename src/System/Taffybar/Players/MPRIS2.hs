@@ -5,41 +5,17 @@
 -- works with version 2 of the MPRIS protocol
 -- (http://www.mpris.org/2.0/spec.html).
 --
-module System.Taffybar.MPRIS2 ( mpris2New
-                              , TrackInfo2(..)
-                              , MPRIS2Config(..)
-                              , defaultMPRIS2Config
+module System.Taffybar.Players.MPRIS2 ( mpris2New
                               ) where
 
 import Data.Maybe ( listToMaybe )
 import DBus
 import DBus.Client
 import Data.List (isPrefixOf)
-import Data.Maybe(fromMaybe)
 import Graphics.UI.Gtk hiding ( Signal, Variant )
+import System.Taffybar.Players.Common
 
-data TrackInfo2 = TrackInfo2
-  { trackArtist :: Maybe String -- ^ Artist name, if available.
-  , trackTitle  :: Maybe String -- ^ Track name, if available.
-  , trackAlbum  :: Maybe String -- ^ Album name, if available.
-  }
-
-data MPRIS2Config = MPRIS2Config
-    { trackLabel :: TrackInfo2 -> String -- ^ calculate label from TrackInfo2
-    }
-
-defaultMPRIS2Config :: MPRIS2Config
-defaultMPRIS2Config = MPRIS2Config
-    { trackLabel = \(TrackInfo2
-                    { trackArtist = artist
-                    , trackAlbum = album
-                    , trackTitle = title
-                    }) -> (fromMaybe "" artist) ++ " - [" ++
-                        (fromMaybe "" album) ++ "] - " ++
-                        (fromMaybe "" title)
-    }
-
-mpris2New :: MPRIS2Config -> IO Widget
+mpris2New :: PlayerConfig -> IO Widget
 mpris2New cfg = do
   label <- labelNew (Nothing :: Maybe String)
   widgetShowAll label
@@ -51,7 +27,7 @@ unpack var = case fromVariant var of
   Just x -> x
   Nothing -> error("Could not unpack variant: " ++ show var)
 
-initLabel :: MPRIS2Config -> Label -> IO ()
+initLabel :: PlayerConfig -> Label -> IO ()
 initLabel cfg w = do
   client <- connectSession
   -- Set initial song state/info
@@ -70,7 +46,7 @@ initLabel cfg w = do
                                  , matchMember = Just "PropertiesChanged"
                                  }
 
-reqSongInfo :: MPRIS2Config -> Label -> Client -> IO ()
+reqSongInfo :: PlayerConfig -> Label -> Client -> IO ()
 reqSongInfo cfg w client = do
   rep <- call_ client (methodCall "/org/freedesktop/DBus" "org.freedesktop.DBus" "ListNames")
                          { methodCallDestination = Just "org.freedesktop.DBus" }
@@ -97,11 +73,11 @@ getProperty client name property = do
                          toVariant property ]
     }
 
-setSongInfo :: MPRIS2Config -> Label -> Maybe String -> Maybe String -> Maybe String
+setSongInfo :: PlayerConfig -> Label -> Maybe String -> Maybe String -> Maybe String
                 -> IO ()
-setSongInfo (MPRIS2Config { trackLabel = getTrackLabel }) w artist album title = do
+setSongInfo (PlayerConfig { trackLabel = getTrackLabel }) w artist album title = do
   let txt = "<span fgcolor='yellow'>▶</span> " ++
-          (getTrackLabel $ TrackInfo2 { trackArtist = artist
+          (getTrackLabel $ TrackInfo { trackArtist = artist
                                      , trackTitle = title
                                      , trackAlbum = album
                                      })
@@ -120,7 +96,7 @@ updatePlaybackStatus w items = do
     Nothing -> do
       return ()
 
-updateSongInfo :: MPRIS2Config -> Label -> [(Variant, Variant)] -> IO ()
+updateSongInfo :: PlayerConfig -> Label -> [(Variant, Variant)] -> IO ()
 updateSongInfo cfg w items = setSongInfo cfg w readArtist readAlbum readTitle
   where
     readArtist :: Maybe String
@@ -136,7 +112,7 @@ updateSongInfo cfg w items = setSongInfo cfg w readArtist readAlbum readTitle
       album <- lookup (toVariant ("xesam:album" :: String)) items
       Just $ (unpack . unpack) album
 
-updateMetadata :: MPRIS2Config -> Label -> [(Variant, Variant)] -> IO ()
+updateMetadata :: PlayerConfig -> Label -> [(Variant, Variant)] -> IO ()
 updateMetadata cfg w items = do
   case lookup (toVariant ("Metadata" :: String)) items of
     Just meta -> do

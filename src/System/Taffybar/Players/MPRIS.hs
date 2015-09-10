@@ -5,10 +5,8 @@
 -- only works with version 1 of the MPRIS protocol
 -- (http://www.mpris.org/1.0/spec.html).  Support for version 2 will
 -- be in a separate widget.
-module System.Taffybar.MPRIS
+module System.Taffybar.Players.MPRIS
   ( TrackInfo (..)
-  , MPRISConfig (..)
-  , defaultMPRISConfig
   , mprisNew
   ) where
 
@@ -19,21 +17,12 @@ import qualified Data.Text as T
 import DBus
 import DBus.Client
 import Graphics.UI.Gtk hiding ( Signal, Variant )
-import Text.Printf
+import System.Taffybar.Players.Common
 
 
 
-data TrackInfo = TrackInfo
-  { trackArtist :: Maybe String -- ^ Artist name, if available.
-  , trackTitle  :: Maybe String -- ^ Track name, if available.
-  , trackAlbum  :: Maybe String -- ^ Album name, if available.
-  }
 
-data MPRISConfig = MPRISConfig
-  { trackLabel :: TrackInfo -> String -- ^ Calculate a label to display.
-  }
-
-setupDBus :: MPRISConfig -> Label -> IO ()
+setupDBus :: PlayerConfig -> Label -> IO ()
 setupDBus cfg w = do
   let trackMatcher = matchAny { matchSender = Nothing
                                , matchDestination = Nothing
@@ -57,7 +46,7 @@ variantDictLookup k m = do
   fromVariant val
 
 
-trackCallback :: MPRISConfig -> Label -> Signal -> IO ()
+trackCallback :: PlayerConfig -> Label -> Signal -> IO ()
 trackCallback cfg w s = do
   let v :: Maybe (M.Map Text Variant)
       v = fromVariant variant
@@ -89,17 +78,8 @@ stateCallback w s =
       _ -> return ()
     _ -> return ()
 
-defaultMPRISConfig :: MPRISConfig
-defaultMPRISConfig = MPRISConfig
-  { trackLabel = display
-  }
-  where artist track  = maybe "[unknown]" id (trackArtist track)
-        title  track  = maybe "[unknown]" id (trackTitle  track)
-        display :: TrackInfo -> String
-        display track = "<span fgcolor='yellow'>▶</span> " ++
-                        printf "%s - %s" (artist track) (title track)
 
-mprisNew :: MPRISConfig -> IO Widget
+mprisNew :: PlayerConfig -> IO Widget
 mprisNew cfg = do
   l <- labelNew (Nothing :: Maybe String)
 
