@@ -139,8 +139,12 @@ import Text.Printf ( printf )
 
 import System.Glib.Signals
 import Graphics.UI.Gtk.Abstract.Widget
+import Graphics.UI.Gtk.General.CssProvider
+import Graphics.UI.Gtk.General.StyleContext
 import Paths_taffybar ( getDataDir )
 import System.Taffybar.StrutProperties
+import System.IO
+import Graphics.UI.Gtk.General.StyleContext (styleContextAddProviderForScreen)
 
 data Position = Top | Bottom
   deriving (Show, Eq)
@@ -247,6 +251,7 @@ setTaffybarSize cfg window = do
                          (Just (w, barHeight cfg)) -- Min size.
                          (Just (w, barHeight cfg)) -- Max size.
                          Nothing
+
                          Nothing
                          Nothing
 
@@ -264,6 +269,14 @@ setTaffybarSize cfg window = do
 
 taffybarMain :: TaffybarConfig -> IO ()
 taffybarMain cfg = do
+  -- Override the default GTK theme path settings.  This causes the
+  -- bar (by design) to ignore the real GTK theme and just use the
+  -- provided minimal theme to set the background and text colors.
+  -- Users can override this default.
+  taffybarProvider <- cssProviderNew
+  cssProviderLoadFromPath taffybarProvider =<< getDefaultConfigFile "taffybar.css"
+  Just scr <- screenGetDefault
+  styleContextAddProviderForScreen scr taffybarProvider 800
 
   _ <- initGUI
 
@@ -284,8 +297,7 @@ taffybarMain cfg = do
   windowSetTypeHint window WindowTypeHintDock
   windowSetScreen window screen
   setTaffybarSize cfg window
-
-  -- Reset the size of the Taffybar window if the monitor setup has
+-- Reset the size of the Taffybar window if the monitor setup has
   -- changed, e.g., after a laptop user has attached an external
   -- monitor.
   _ <- on screen screenMonitorsChanged (setTaffybarSize cfg window)
