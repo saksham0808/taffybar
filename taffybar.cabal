@@ -62,44 +62,44 @@ library
     build-depends: network-uri < 2.6, network < 2.6
   hs-source-dirs: src
   pkgconfig-depends: gtk+-3.0
-  exposed-modules: System.Information.Battery
-                 , System.Information.CPU
-                 , System.Information.CPU2
-                 , System.Information.DiskIO
-                 , System.Information.EWMHDesktopInfo
-                 , System.Information.Memory
-                 , System.Information.Network
-                 , System.Information.StreamInfo
-                 , System.Information.X11DesktopInfo
-                 , System.Taffybar
-                 , System.Taffybar.Battery
-                 , System.Taffybar.CPUMonitor
-                 , System.Taffybar.CommandRunner
-                 , System.Taffybar.DiskIOMonitor
-                 , System.Taffybar.FSMonitor
-                 , System.Taffybar.FreedesktopNotifications
-                 , System.Taffybar.Hooks.PagerHints
-                 , System.Taffybar.LayoutSwitcher
-                 , System.Taffybar.Players.Common
-                 , System.Taffybar.Players.MPRIS
-                 , System.Taffybar.Players.MPRIS2
-                 , System.Taffybar.NetMonitor
-                 , System.Taffybar.Pager
-                 , System.Taffybar.SimpleClock
-                 , System.Taffybar.Systray
-                 , System.Taffybar.TaffyPager
-                 , System.Taffybar.Text.CPUMonitor
-                 , System.Taffybar.Text.MemoryMonitor
-                 , System.Taffybar.Weather
-                 , System.Taffybar.Widgets.Graph
-                 , System.Taffybar.Widgets.PollingBar
-                 , System.Taffybar.Widgets.PollingGraph
-                 , System.Taffybar.Widgets.PollingLabel
-                 , System.Taffybar.Widgets.Util
-                 , System.Taffybar.Widgets.VerticalBar
-                 , System.Taffybar.WindowSwitcher
-                 , System.Taffybar.WorkspaceSwitcher
-                 , System.Taffybar.XMonadLog
+  exposed-modules: System.Information.Battery,
+                   System.Information.CPU,
+                   System.Information.CPU2,
+                   System.Information.DiskIO,
+                   System.Information.EWMHDesktopInfo,
+                   System.Information.Memory,
+                   System.Information.Network,
+                   System.Information.StreamInfo,
+                   System.Information.X11DesktopInfo,
+                   System.Taffybar,
+                   System.Taffybar.Battery,
+                   System.Taffybar.CPUMonitor,
+                   System.Taffybar.CommandRunner,
+                   System.Taffybar.DiskIOMonitor,
+                   System.Taffybar.FSMonitor,
+                   System.Taffybar.FreedesktopNotifications,
+                   System.Taffybar.Hooks.PagerHints,
+                   System.Taffybar.LayoutSwitcher,
+                   System.Taffybar.Players.Common,
+                   System.Taffybar.Players.MPRIS,
+                   System.Taffybar.Players.MPRIS2,
+                   System.Taffybar.NetMonitor,
+                   System.Taffybar.Pager,
+                   System.Taffybar.SimpleClock,
+                   System.Taffybar.Systray,
+                   System.Taffybar.TaffyPager,
+                   System.Taffybar.Text.CPUMonitor,
+                   System.Taffybar.Text.MemoryMonitor,
+                   System.Taffybar.Weather,
+                   System.Taffybar.Widgets.Graph,
+                   System.Taffybar.Widgets.PollingBar,
+                   System.Taffybar.Widgets.PollingGraph,
+                   System.Taffybar.Widgets.PollingLabel,
+                   System.Taffybar.Widgets.Util,
+                   System.Taffybar.Widgets.VerticalBar,
+                   System.Taffybar.WindowSwitcher,
+                   System.Taffybar.WorkspaceSwitcher,
+                   System.Taffybar.XMonadLog
   other-modules: System.Taffybar.StrutProperties,
                  Paths_taffybar
 
