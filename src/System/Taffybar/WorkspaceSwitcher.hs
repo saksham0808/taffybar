@@ -211,6 +211,11 @@ addButton hbox desktop idx
     Gtk.widgetSetName ebox $ name ws
     Gtk.eventBoxSetVisibleWindow ebox False
     _ <- Gtk.on ebox Gtk.buttonPressEvent $ switch idx
+    _ <- Gtk.on ebox Gtk.scrollEvent $ do
+      dir <- Gtk.eventScrollDirection
+      case dir of
+        Gtk.ScrollUp   -> switcher
+        Gtk.ScrollDown -> switch (allWorkspaces desktop !! (length desktop -1))
     Gtk.containerAdd ebox lbl
     Gtk.boxPackStart hbox ebox Gtk.PackNatural 0
   | otherwise = return ()
@@ -252,6 +257,12 @@ mark desktop decorate wsIdx
 switch :: (MonadIO m) => WorkspaceIdx -> m Bool
 switch idx = do
   liftIO $ withDefaultCtx (switchToWorkspace idx)
+  return True
+
+-- | Switch to the workspace with the given index.
+switcher :: (MonadIO m) => Bool -> m Bool
+switcher dir = do
+  liftIO $ withDefaultCtx (switchOneUp)
   return True
 
 -- | Modify the Desktop inside the given IORef, so that the Workspace at the
